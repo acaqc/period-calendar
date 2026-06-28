@@ -33,6 +33,8 @@ function formatDateShort(date: Date): string {
 
 export default function StatusBar({ cycleState, hasPeriods, selectedDate, periods }: StatusBarProps) {
   // Always compute phase for selected date, never fallback
+  console.log('[StatusBar] selectedDate:', selectedDate, 'periods.length:', periods.length);
+
   let activePhase: DatePhaseInfo | null = null;
   let isSelected = false;
 
