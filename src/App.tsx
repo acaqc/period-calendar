@@ -75,8 +75,8 @@ export default function App() {
     setSelectedDate(null); // reset to today's status
   }, []);
 
-  const handleDateClick = useCallback(
-    (date: Date) => {
+  // NOT wrapped in useCallback to ensure fresh closure every render
+  const handleDateClick = (date: Date) => {
       // Always update selected date for status bar
       console.log('[handleDateClick] called with date:', date);
       setSelectedDate(date);
@@ -127,9 +127,7 @@ export default function App() {
       }
 
       // No mode, no existing mark → just show date info (already set via setSelectedDate)
-    },
-    [periodMode, intimacyMode, data.periods, data.intimacyDates, addPeriodRecord, removePeriodRecord, toggleIntimacyRecord]
-  );
+    };
 
   const handleDateContextMenu = useCallback((date: Date, e: React.MouseEvent) => {
     e.preventDefault();
