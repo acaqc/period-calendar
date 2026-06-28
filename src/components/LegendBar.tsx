@@ -34,31 +34,40 @@ export default function LegendBar({ cycleState }: LegendBarProps) {
           ))}
         </div>
 
-        {/* Cycle summary */}
-        {cycleState.predictedNextPeriod && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-gray-400 border-t border-gray-50 pt-3">
-            <span>
-              周期{' '}
-              <strong className="text-gray-700 font-semibold">{cycleState.averageCycleLength}</strong>{' '}
-              天
-            </span>
-            <span className="text-gray-200">|</span>
-            <span>
-              下次经期{' '}
-              <strong className="text-gray-700 font-semibold">
-                {formatDateCN(cycleState.predictedNextPeriod)}
+        {/* Ovulation summary */}
+        {cycleState.predictedOvulation && (
+          <div className="border-t border-gray-50 pt-3 space-y-1.5">
+            {/* Previous ovulation */}
+            {cycleState.previousOvulation && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-gray-400">🌸 上个排卵日</span>
+                <strong className="text-gray-600 font-semibold">
+                  {formatDateCN(cycleState.previousOvulation)}
+                </strong>
+              </div>
+            )}
+
+            {/* Next ovulation */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-rose-400">🌸 下个排卵日</span>
+              <strong className="text-rose-600 font-semibold">
+                {formatDateCN(cycleState.predictedOvulation)}
               </strong>
-            </span>
-            {cycleState.predictedOvulation && (
-              <>
-                <span className="text-gray-200">|</span>
-                <span>
-                  排卵日{' '}
-                  <strong className="text-gray-700 font-semibold">
-                    {formatDateCN(cycleState.predictedOvulation)}
-                  </strong>
-                </span>
-              </>
+              <span className="text-gray-400 ml-auto">
+                周期{' '}
+                <strong className="text-gray-600 font-semibold">{cycleState.averageCycleLength}</strong>{' '}
+                天
+              </span>
+            </div>
+
+            {/* Next period */}
+            {cycleState.predictedNextPeriod && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-gray-400">🩸 下次经期</span>
+                <strong className="text-gray-600 font-semibold">
+                  {formatDateCN(cycleState.predictedNextPeriod)}
+                </strong>
+              </div>
             )}
           </div>
         )}

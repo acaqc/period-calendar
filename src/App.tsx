@@ -41,9 +41,9 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // Compute selected phase — NOT memoized to ensure freshness after setState
+  // Compute selected phase — always calculate if date selected
   const selectedPhase: DatePhaseInfo | null = (() => {
-    if (!selectedDate || data.periods.length === 0) return null;
+    if (!selectedDate) return null;
     return getDatePhase(selectedDate, data.periods, cycleState);
   })();
 
@@ -89,12 +89,14 @@ export default function App() {
 
       const dateStr = date.toISOString().slice(0, 10);
 
-      // Check existing marks
-      const existingStart = data.periods.find((p) => p.startDate === dateStr);
+      // Check existing marks using current data from hook
+      const currentPeriods = data.periods;
+      const currentIntimacy = data.intimacyDates || [];
+      const existingStart = currentPeriods.find((p) => p.startDate === dateStr);
       const existingPeriod = !existingStart
-        ? data.periods.find((p) => dateStr >= p.startDate && dateStr <= p.endDate)
+        ? currentPeriods.find((p) => dateStr >= p.startDate && dateStr <= p.endDate)
         : null;
-      const existingIntimacy = (data.intimacyDates || []).includes(dateStr);
+      const existingIntimacy = currentIntimacy.includes(dateStr);
 
       // Intimacy mode active: toggle intimacy
       if (intimacyMode) {
@@ -104,16 +106,16 @@ export default function App() {
         return;
       }
 
-      // Clicking on an existing period → always cancel it (regardless of mode)
+      // Clicking on an existing period → always cancel the WHOLE period
       if (existingStart || existingPeriod) {
-        const targetDate = existingStart ? date : new Date(existingPeriod!.startDate);
-        removePeriodRecord(targetDate);
+        const targetDateStr = existingStart ? dateStr : existingPeriod!.startDate;
+        removePeriodRecord(new Date(targetDateStr + 'T00:00:00'));
         setToast('经期记录已取消');
         setTimeout(() => setToast(null), 2000);
         return;
       }
 
-      // Clicking on existing intimacy (no mode) → cancel it
+      // Clicking on existing intimacy (no intimacy mode) → cancel it
       if (existingIntimacy) {
         toggleIntimacyRecord(date);
         setToast('已取消爱爱记录');
@@ -123,14 +125,9 @@ export default function App() {
 
       // Period mode active + blank date → add period
       if (periodMode) {
-        const result = addPeriodRecord(date);
-        if (result.error) {
-          setToast(result.error);
-          setTimeout(() => setToast(null), 3000);
-        } else {
-          setToast('✓ 经期已记录');
-          setTimeout(() => setToast(null), 2000);
-        }
+        addPeriodRecord(date);
+        setToast('✓ 经期已记录');
+        setTimeout(() => setToast(null), 2000);
         return;
       }
 

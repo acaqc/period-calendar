@@ -49,9 +49,10 @@ export interface CycleState {
   lastPeriodStart: Date | null;
   predictedNextPeriod: Date | null;
   predictedOvulation: Date | null;
+  previousOvulation: Date | null;   // 上一个排卵日（已过去的）
   fertileWindow: { start: Date; end: Date } | null;
-  todayProbability: number | null;  // 今日怀孕概率百分比
-  todayProbabilityLabel: string;    // 概率说明文案
+  todayProbability: number | null;
+  todayProbabilityLabel: string;
   todayPhase: {
     phase: PhaseLabel;
     label: string;

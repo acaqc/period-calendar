@@ -200,11 +200,15 @@ export function calculateCycle(
   const lastPeriod = sortedPeriods[sortedPeriods.length - 1] || null;
   const lastPeriodStart = lastPeriod ? parseISO(lastPeriod.startDate) : null;
 
+  // Even without period records, predict based on default cycle from today
   const predictedNextPeriod = lastPeriodStart
     ? addDays(lastPeriodStart, effectiveCycle)
-    : null;
-  const predictedOvulation = predictedNextPeriod
-    ? addDays(predictedNextPeriod, -14)
+    : addDays(today, effectiveCycle);
+  const predictedOvulation = addDays(predictedNextPeriod, -14);
+
+  // Previous ovulation: the one before the current cycle's predicted ovulation
+  const previousOvulation = predictedOvulation
+    ? addDays(predictedOvulation, -effectiveCycle)
     : null;
 
   const fertileWindow =
@@ -309,6 +313,7 @@ export function calculateCycle(
     lastPeriodStart,
     predictedNextPeriod,
     predictedOvulation,
+    previousOvulation,
     fertileWindow,
     todayProbability,
     todayProbabilityLabel,
@@ -332,7 +337,7 @@ export function getDatePhase(
   cycleState: CycleState
 ): DatePhaseInfo {
   const dateStr = format(targetDate, 'yyyy-MM-dd');
-  const { predictedOvulation, fertileWindow } = cycleState;
+  const { predictedOvulation } = cycleState;
 
   // Check if in period
   const period = getPeriodForDate(periods, dateStr);
@@ -348,7 +353,7 @@ export function getDatePhase(
     };
   }
 
-  if (!predictedOvulation || !fertileWindow) {
+  if (!predictedOvulation) {
     return { phase: 'no_data', label: '暂无预测数据', probability: null, probabilityLabel: '' };
   }
 
