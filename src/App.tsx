@@ -73,31 +73,55 @@ export default function App() {
 
   const handleDateClick = useCallback(
     (date: Date) => {
+      const dateStr = date.toISOString().slice(0, 10);
+
       // Intimacy mode: toggle intimacy for the date
       if (intimacyMode) {
         toggleIntimacyRecord(date);
-        const dateStr = date.toISOString().slice(0, 10);
         const hasIt = (data.intimacyDates || []).includes(dateStr);
         setToast(hasIt ? '已取消爱爱记录' : '💕 已记录爱爱');
         setTimeout(() => setToast(null), 2000);
         return;
       }
 
-      // Period mode: add/remove period
-      if (!periodMode) return;
-
-      const dateStr = date.toISOString().slice(0, 10);
+      // Check if clicking on an existing marked date (period or intimacy)
       const existingStart = data.periods.find((p) => p.startDate === dateStr);
-      if (existingStart) {
-        removePeriodRecord(date);
-        setToast('经期记录已取消');
-        setTimeout(() => setToast(null), 2000);
-      } else {
-        const existing = data.periods.find(
-          (p) => dateStr >= p.startDate && dateStr <= p.endDate
-        );
-        if (existing) {
-          removePeriodRecord(new Date(existing.startDate));
+      const existingPeriod = !existingStart
+        ? data.periods.find((p) => dateStr >= p.startDate && dateStr <= p.endDate)
+        : null;
+      const existingIntimacy = (data.intimacyDates || []).includes(dateStr);
+
+      // If clicking on a marked date without any mode active → cancel it
+      if (!periodMode && !intimacyMode) {
+        if (existingStart) {
+          removePeriodRecord(date);
+          setToast('经期记录已取消');
+          setTimeout(() => setToast(null), 2000);
+          return;
+        }
+        if (existingPeriod) {
+          removePeriodRecord(new Date(existingPeriod.startDate));
+          setToast('经期记录已取消');
+          setTimeout(() => setToast(null), 2000);
+          return;
+        }
+        if (existingIntimacy) {
+          toggleIntimacyRecord(date);
+          setToast('已取消爱爱记录');
+          setTimeout(() => setToast(null), 2000);
+          return;
+        }
+        return; // no mark, no mode → do nothing
+      }
+
+      // Period mode active
+      if (periodMode) {
+        if (existingStart) {
+          removePeriodRecord(date);
+          setToast('经期记录已取消');
+          setTimeout(() => setToast(null), 2000);
+        } else if (existingPeriod) {
+          removePeriodRecord(new Date(existingPeriod.startDate));
           setToast('经期记录已取消');
           setTimeout(() => setToast(null), 2000);
         } else {

@@ -42,7 +42,9 @@ function getCellClasses(
 export default function CalendarCell({ day, onDateClick, onDateContextMenu, periodMode, intimacyMode }: CalendarCellProps) {
   const [pressing, setPressing] = useState(false);
   const isDisabled = !day.isCurrentMonth;
-  const isInteractive = isDisabled ? false : (periodMode || intimacyMode);
+  // Already marked dates are always interactive (for cancellation)
+  const hasMark = day.probability === 'period' || day.hasIntimacy;
+  const isInteractive = isDisabled ? false : (periodMode || intimacyMode || hasMark);
 
   const cellClass = getCellClasses(
     day.probability,
