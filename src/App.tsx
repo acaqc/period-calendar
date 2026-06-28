@@ -77,10 +77,7 @@ export default function App() {
 
   // NOT wrapped in useCallback to ensure fresh closure every render
   const handleDateClick = (date: Date) => {
-      // Always update selected date for status bar
-      console.log('[handleDateClick] called with date:', date);
       setSelectedDate(date);
-      console.log('[handleDateClick] setSelectedDate done');
 
       const dateStr = date.toISOString().slice(0, 10);
 
