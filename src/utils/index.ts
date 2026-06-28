@@ -13,6 +13,7 @@ import {
 import type {
   AppData,
   CycleState,
+  CyclePrediction,
   DayInfo,
   PeriodRecord,
   ProbabilityLevel,
@@ -219,6 +220,29 @@ export function calculateCycle(
         }
       : null;
 
+  // ========== Build all cycle predictions (one per period record) ==========
+  const allPredictions: CyclePrediction[] = sortedPeriods.map((period, idx) => {
+    const pStart = parseISO(period.startDate);
+    const pEnd = parseISO(period.endDate);
+    // Determine cycle length for this period
+    let cycleLen = effectiveCycle;
+    if (idx < sortedPeriods.length - 1) {
+      const nextStart = parseISO(sortedPeriods[idx + 1].startDate);
+      const actualLen = differenceInCalendarDays(nextStart, pStart);
+      if (actualLen >= 15 && actualLen <= 60) cycleLen = actualLen;
+    }
+    const nextPeriod = addDays(pStart, cycleLen);
+    const ovDate = addDays(nextPeriod, -14);
+    return {
+      periodStart: pStart,
+      periodEnd: pEnd,
+      ovulationDate: ovDate,
+      fertileStart: addDays(ovDate, -5),
+      fertileEnd: addDays(ovDate, 1),
+      nextPeriodStart: nextPeriod,
+    };
+  });
+
   // Today's phase
   const todayStr = format(today, 'yyyy-MM-dd');
   const todayPeriod = lastPeriod
@@ -315,6 +339,7 @@ export function calculateCycle(
     predictedOvulation,
     previousOvulation,
     fertileWindow,
+    allPredictions,
     todayProbability,
     todayProbabilityLabel,
     todayPhase: { phase, label, periodDay, daysUntilOvulation },
@@ -485,18 +510,55 @@ export function getMonthDaysWithProbability(
   intimacyDates: string[]
 ): DayInfo[] {
   const days = getMonthDays(year, month);
+
   return days.map((day) => {
     if (!day.isCurrentMonth) return day;
-    const { level, periodDay, isPeriodStart } = getProbabilityLevel(
-      day.dateStr,
-      cycleState,
-      periods
-    );
-    const isOvulationDay = cycleState.predictedOvulation
-      ? format(cycleState.predictedOvulation, 'yyyy-MM-dd') === day.dateStr
-      : false;
-    const hasIntimacy = intimacyDates.includes(day.dateStr);
-    return { ...day, probability: level, periodDay, isPeriodStart, isOvulationDay, hasIntimacy };
+
+    // Check period from actual records
+    const period = getPeriodForDate(periods, day.dateStr);
+    if (period) {
+      const periodDay = differenceInCalendarDays(parseISO(day.dateStr), parseISO(period.startDate)) + 1;
+      return {
+        ...day,
+        probability: 'period' as ProbabilityLevel,
+        periodDay,
+        isPeriodStart: period.startDate === day.dateStr,
+        isOvulationDay: false,
+        hasIntimacy: intimacyDates.includes(day.dateStr),
+      };
+    }
+
+    // Check against ALL cycle predictions for fertile windows and ovulation
+    let bestLevel: ProbabilityLevel = 'low';
+    let isOvDay = false;
+
+    for (const pred of cycleState.allPredictions) {
+      const d = parseISO(day.dateStr).getTime();
+
+      // Is this the ovulation day?
+      if (format(pred.ovulationDate, 'yyyy-MM-dd') === day.dateStr) {
+        isOvDay = true;
+      }
+
+      // Is this in the fertile window?
+      if (d >= pred.fertileStart.getTime() && d <= pred.fertileEnd.getTime()) {
+        // High probability: ovulation day ±2
+        if (d >= addDays(pred.ovulationDate, -2).getTime() && d <= addDays(pred.ovulationDate, 1).getTime()) {
+          bestLevel = 'high';
+        } else if (bestLevel !== 'high') {
+          bestLevel = 'medium';
+        }
+      }
+    }
+
+    return {
+      ...day,
+      probability: bestLevel,
+      periodDay: null,
+      isPeriodStart: false,
+      isOvulationDay: isOvDay,
+      hasIntimacy: intimacyDates.includes(day.dateStr),
+    };
   });
 }
 

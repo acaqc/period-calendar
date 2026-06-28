@@ -44,13 +44,23 @@ export type PhaseLabel =
   | 'luteal'
   | 'no_data';
 
+export interface CyclePrediction {
+  periodStart: Date;        // 经期开始日
+  periodEnd: Date;          // 经期结束日
+  ovulationDate: Date;      // 预测排卵日
+  fertileStart: Date;       // 易孕期开始
+  fertileEnd: Date;         // 易孕期结束
+  nextPeriodStart: Date;    // 预测下次经期
+}
+
 export interface CycleState {
   averageCycleLength: number;
   lastPeriodStart: Date | null;
   predictedNextPeriod: Date | null;
   predictedOvulation: Date | null;
-  previousOvulation: Date | null;   // 上一个排卵日（已过去的）
+  previousOvulation: Date | null;
   fertileWindow: { start: Date; end: Date } | null;
+  allPredictions: CyclePrediction[];  // 每条经期的独立预测
   todayProbability: number | null;
   todayProbabilityLabel: string;
   todayPhase: {
