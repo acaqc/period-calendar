@@ -260,19 +260,16 @@ export function calculateCycle(
 
   // Find which prediction today belongs to
   let todayOvDate: Date | null = null;
-  for (let i = 0; i < allPredictions.length; i++) {
-    const pred = allPredictions[i];
-    const nextPred = allPredictions[i + 1];
-    const periodStart = pred.periodStart.getTime();
-    const nextPeriodStart = nextPred ? nextPred.periodStart.getTime() : pred.nextPeriodStart.getTime();
-    if (today.getTime() >= periodStart && today.getTime() < nextPeriodStart) {
+  const todayTime = today.getTime();
+  for (const pred of allPredictions) {
+    if (pred.periodStart.getTime() <= todayTime) {
       todayOvDate = pred.ovulationDate;
+    } else {
       break;
     }
   }
-  // Fallback to last prediction
   if (!todayOvDate && allPredictions.length > 0) {
-    todayOvDate = allPredictions[allPredictions.length - 1].ovulationDate;
+    todayOvDate = allPredictions[0].ovulationDate;
   }
 
   if (!lastPeriodStart) {
@@ -376,26 +373,24 @@ export function getDatePhase(
     };
   }
 
-  // Find the prediction that this date belongs to
-  // Strategy: find the period that starts before targetDate and whose next period starts after targetDate
+  // Find the prediction whose ovulation date is closest to (but not after) targetDate
+  // This ensures we use the right cycle's ovulation for phase calculation
   const { allPredictions } = cycleState;
-  let matchedPrediction = allPredictions.length > 0 ? allPredictions[allPredictions.length - 1] : null;
+  let matchedPrediction: CyclePrediction | null = null;
 
-  for (let i = 0; i < allPredictions.length; i++) {
-    const pred = allPredictions[i];
-    const nextPred = allPredictions[i + 1];
-    const periodStart = pred.periodStart.getTime();
-    const nextPeriodStart = nextPred ? nextPred.periodStart.getTime() : pred.nextPeriodStart.getTime();
+  if (allPredictions.length > 0) {
+    // Find the prediction whose periodStart <= targetDate and is the latest such
     const targetTime = targetDate.getTime();
-
-    if (targetTime >= periodStart && targetTime < nextPeriodStart) {
-      matchedPrediction = pred;
-      break;
+    for (const pred of allPredictions) {
+      if (pred.periodStart.getTime() <= targetTime) {
+        matchedPrediction = pred;
+      } else {
+        break; // predictions are sorted by periodStart
+      }
     }
-    // If target is before the first period, use the first prediction
-    if (i === 0 && targetTime < periodStart) {
-      matchedPrediction = pred;
-      break;
+    // If target is before all periods, use the first prediction
+    if (!matchedPrediction) {
+      matchedPrediction = allPredictions[0];
     }
   }
 
