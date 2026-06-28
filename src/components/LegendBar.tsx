@@ -10,6 +10,8 @@ const legendItems = [
   { color: 'bg-rose-400', label: '高概率' },
   { color: 'bg-amber-400', label: '中概率' },
   { color: 'ring-2 ring-indigo-400 ring-inset', label: '今天' },
+  { color: 'text-sm', label: '🌸 排卵日' },
+  { color: 'text-sm', label: '💕 爱爱' },
 ];
 
 export default function LegendBar({ cycleState }: LegendBarProps) {
@@ -19,9 +21,15 @@ export default function LegendBar({ cycleState }: LegendBarProps) {
         {/* Color legend */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-3">
           {legendItems.map((item) => (
-            <div key={item.label} className="flex items-center gap-2">
-              <span className={`w-3 h-3 rounded-full ${item.color}`} />
-              <span className="text-xs text-gray-500">{item.label}</span>
+            <div key={item.label} className="flex items-center gap-1.5">
+              {item.color.startsWith('bg-') || item.color.startsWith('ring-') ? (
+                <span className={`w-3 h-3 rounded-full ${item.color}`} />
+              ) : (
+                <span className={item.color}>{item.label.slice(0, 2)}</span>
+              )}
+              <span className="text-xs text-gray-500">
+                {item.color.startsWith('text-') ? item.label.slice(2) : item.label}
+              </span>
             </div>
           ))}
         </div>

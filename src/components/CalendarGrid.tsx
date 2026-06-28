@@ -9,6 +9,8 @@ interface CalendarGridProps {
   onDateContextMenu: (date: Date, e: React.MouseEvent) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  periodMode: boolean;
+  intimacyMode: boolean;
 }
 
 export default function CalendarGrid({
@@ -17,6 +19,8 @@ export default function CalendarGrid({
   onDateContextMenu,
   onPrevMonth,
   onNextMonth,
+  periodMode,
+  intimacyMode,
 }: CalendarGridProps) {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -36,7 +40,7 @@ export default function CalendarGrid({
   };
 
   return (
-    <div className="px-3 sm:px-4 max-w-lg mx-auto">
+    <div className="px-3 sm:px-4 w-full max-w-lg mx-auto">
       {/* Card wrapper */}
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Weekday headers */}
@@ -70,6 +74,8 @@ export default function CalendarGrid({
                 day={day}
                 onDateClick={onDateClick}
                 onDateContextMenu={onDateContextMenu}
+                periodMode={periodMode}
+                intimacyMode={intimacyMode}
               />
             </div>
           ))}

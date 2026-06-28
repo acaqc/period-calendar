@@ -15,6 +15,7 @@ export interface AppData {
   version: number;
   settings: UserSettings;
   periods: PeriodRecord[];
+  intimacyDates: string[];     // ISO "YYYY-MM-DD" — 爱爱记录日期
   onboardingCompleted: boolean;
   lastModified: string;
 }
@@ -29,8 +30,10 @@ export interface DayInfo {
   isWeekend: boolean;
   isToday: boolean;
   probability: ProbabilityLevel;
-  periodDay: number | null;  // 经期第几天，null 表示非经期
+  periodDay: number | null;
   isPeriodStart: boolean;
+  isOvulationDay: boolean;    // 是否为预测排卵日
+  hasIntimacy: boolean;       // 是否有爱爱记录
 }
 
 export type PhaseLabel =
@@ -61,4 +64,4 @@ export const DEFAULT_SETTINGS: UserSettings = {
 };
 
 export const STORAGE_KEY = 'period-calendar-data';
-export const APP_VERSION = 1;
+export const APP_VERSION = 2;

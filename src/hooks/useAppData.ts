@@ -7,6 +7,7 @@ import {
   isStorageAvailable,
   addPeriod,
   removePeriod,
+  toggleIntimacy,
   calculateCycle,
 } from '../utils';
 
@@ -15,10 +16,15 @@ interface UseAppDataReturn {
   cycleState: CycleState;
   storageAvailable: boolean;
   isInitialized: boolean;
+  periodMode: boolean;
+  intimacyMode: boolean;
+  togglePeriodMode: () => void;
+  toggleIntimacyMode: () => void;
   updateSettings: (settings: UserSettings) => void;
   completeOnboarding: (settings: UserSettings) => void;
   addPeriodRecord: (date: Date) => { error?: string };
   removePeriodRecord: (date: Date) => boolean;
+  toggleIntimacyRecord: (date: Date) => void;
   resetAll: () => void;
   setData: (data: AppData) => void;
 }
@@ -31,18 +37,17 @@ export function useAppData(): UseAppDataReturn {
   });
   const [storageAvailable, setStorageAvailable] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [periodMode, setPeriodMode] = useState(false);
+  const [intimacyMode, setIntimacyMode] = useState(false);
   const initializedRef = useRef(false);
 
-  // Check storage availability once
   useEffect(() => {
     setStorageAvailable(isStorageAvailable());
     setIsInitialized(true);
   }, []);
 
-  // Recalculate cycle state whenever data changes
   const cycleState = calculateCycle(data.periods, data.settings);
 
-  // Persist on data change (skip initial render)
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
@@ -59,6 +64,22 @@ export function useAppData(): UseAppDataReturn {
 
   const completeOnboarding = useCallback((settings: UserSettings) => {
     setData((prev) => ({ ...prev, settings, onboardingCompleted: true }));
+  }, []);
+
+  const togglePeriodMode = useCallback(() => {
+    setPeriodMode((prev) => {
+      if (prev) return false; // turning off
+      setIntimacyMode(false); // turn off intimacy when turning on period
+      return true;
+    });
+  }, []);
+
+  const toggleIntimacyMode = useCallback(() => {
+    setIntimacyMode((prev) => {
+      if (prev) return false;
+      setPeriodMode(false); // turn off period when turning on intimacy
+      return true;
+    });
   }, []);
 
   const addPeriodRecord = useCallback(
@@ -82,9 +103,18 @@ export function useAppData(): UseAppDataReturn {
     [data]
   );
 
+  const toggleIntimacyRecord = useCallback(
+    (date: Date) => {
+      setData((prev) => toggleIntimacy(prev, date));
+    },
+    []
+  );
+
   const resetAll = useCallback(() => {
     const fresh = initializeData();
     setData(fresh);
+    setPeriodMode(false);
+    setIntimacyMode(false);
   }, []);
 
   return {
@@ -92,10 +122,15 @@ export function useAppData(): UseAppDataReturn {
     cycleState,
     storageAvailable,
     isInitialized,
+    periodMode,
+    intimacyMode,
+    togglePeriodMode,
+    toggleIntimacyMode,
     updateSettings,
     completeOnboarding,
     addPeriodRecord,
     removePeriodRecord,
+    toggleIntimacyRecord,
     resetAll,
     setData,
   };

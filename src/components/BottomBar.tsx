@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import type { PeriodRecord } from '../types';
+import type { PeriodRecord, AppData } from '../types';
 import { exportCSV, exportJSON } from '../utils';
 
 interface BottomBarProps {
   periods: PeriodRecord[];
-  data: { settings: { cycleLength: number; periodLength: number }; periods: PeriodRecord[] };
+  data: AppData;
 }
 
 export default function BottomBar({ periods, data }: BottomBarProps) {
@@ -23,9 +23,10 @@ export default function BottomBar({ periods, data }: BottomBarProps) {
   const handleExportJSON = () => {
     if (periods.length === 0) return;
     const json = exportJSON({
-      version: 1,
+      version: 2,
       settings: data.settings,
       periods: data.periods,
+      intimacyDates: data.intimacyDates || [],
       onboardingCompleted: true,
       lastModified: new Date().toISOString(),
     });

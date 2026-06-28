@@ -4,6 +4,7 @@ import { useAppData } from './hooks/useAppData';
 import { getMonthDaysWithProbability } from './utils';
 import HeaderBar from './components/HeaderBar';
 import CalendarGrid from './components/CalendarGrid';
+import ToggleBar from './components/ToggleBar';
 import StatusBar from './components/StatusBar';
 import LegendBar from './components/LegendBar';
 import BottomBar from './components/BottomBar';
@@ -17,10 +18,15 @@ export default function App() {
     cycleState,
     storageAvailable,
     isInitialized,
+    periodMode,
+    intimacyMode,
+    togglePeriodMode,
+    toggleIntimacyMode,
     updateSettings,
     completeOnboarding,
     addPeriodRecord,
     removePeriodRecord,
+    toggleIntimacyRecord,
     resetAll,
   } = useAppData();
 
@@ -41,9 +47,10 @@ export default function App() {
         currentMonth.getFullYear(),
         currentMonth.getMonth(),
         cycleState,
-        data.periods
+        data.periods,
+        data.intimacyDates || []
       ),
-    [currentMonth, cycleState, data.periods]
+    [currentMonth, cycleState, data.periods, data.intimacyDates]
   );
 
   const showTodayBtn = useMemo(() => {
@@ -66,6 +73,19 @@ export default function App() {
 
   const handleDateClick = useCallback(
     (date: Date) => {
+      // Intimacy mode: toggle intimacy for the date
+      if (intimacyMode) {
+        toggleIntimacyRecord(date);
+        const dateStr = date.toISOString().slice(0, 10);
+        const hasIt = (data.intimacyDates || []).includes(dateStr);
+        setToast(hasIt ? '已取消爱爱记录' : '💕 已记录爱爱');
+        setTimeout(() => setToast(null), 2000);
+        return;
+      }
+
+      // Period mode: add/remove period
+      if (!periodMode) return;
+
       const dateStr = date.toISOString().slice(0, 10);
       const existingStart = data.periods.find((p) => p.startDate === dateStr);
       if (existingStart) {
@@ -92,7 +112,7 @@ export default function App() {
         }
       }
     },
-    [data.periods, addPeriodRecord, removePeriodRecord]
+    [periodMode, intimacyMode, data.periods, data.intimacyDates, addPeriodRecord, removePeriodRecord, toggleIntimacyRecord]
   );
 
   const handleDateContextMenu = useCallback((date: Date, e: React.MouseEvent) => {
@@ -124,7 +144,6 @@ export default function App() {
     [completeOnboarding]
   );
 
-  // Loading state
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -137,44 +156,60 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-slate-50 flex flex-col">
+    <div className="min-h-screen min-h-dvh bg-slate-50 flex flex-col items-center">
       {/* Storage warning */}
       {!storageAvailable && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-center animate-fade-in">
+        <div className="w-full bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-center animate-fade-in">
           <p className="text-xs text-amber-700 font-medium">
             ⚠️ 当前浏览器不支持数据持久化，关闭页面后数据将丢失。建议使用 Chrome 浏览器。
           </p>
         </div>
       )}
 
-      {/* Header */}
-      <HeaderBar
-        currentMonth={currentMonth}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-        onToday={handleToday}
-        showToday={showTodayBtn}
-        onOpenSettings={() => setShowSettings(true)}
-      />
+      {/* Main content wrapper — centered */}
+      <div className="w-full max-w-lg flex flex-col flex-1">
+        {/* Header */}
+        <HeaderBar
+          currentMonth={currentMonth}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onToday={handleToday}
+          showToday={showTodayBtn}
+          onOpenSettings={() => setShowSettings(true)}
+        />
 
-      {/* Calendar */}
-      <CalendarGrid
-        days={days}
-        onDateClick={handleDateClick}
-        onDateContextMenu={handleDateContextMenu}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-      />
+        {/* Toggle bar — period & intimacy switches */}
+        <ToggleBar
+          periodMode={periodMode}
+          intimacyMode={intimacyMode}
+          onTogglePeriod={togglePeriodMode}
+          onToggleIntimacy={toggleIntimacyMode}
+          hasPeriods={data.periods.length > 0}
+        />
 
-      {/* Status */}
-      <StatusBar cycleState={cycleState} hasPeriods={data.periods.length > 0} />
+        {/* Calendar */}
+        <div className="mt-3">
+          <CalendarGrid
+            days={days}
+            onDateClick={handleDateClick}
+            onDateContextMenu={handleDateContextMenu}
+            onPrevMonth={handlePrevMonth}
+            onNextMonth={handleNextMonth}
+            periodMode={periodMode}
+            intimacyMode={intimacyMode}
+          />
+        </div>
 
-      {/* Legend */}
-      <LegendBar cycleState={cycleState} />
+        {/* Status */}
+        <StatusBar cycleState={cycleState} hasPeriods={data.periods.length > 0} />
 
-      {/* Bottom actions */}
-      <div className="flex-1" />
-      <BottomBar periods={data.periods} data={data} />
+        {/* Legend */}
+        <LegendBar cycleState={cycleState} />
+
+        {/* Bottom actions */}
+        <div className="flex-1" />
+        <BottomBar periods={data.periods} data={data} />
+      </div>
 
       {/* Modals & Overlays */}
       {showOnboarding && <OnboardingModal onSave={handleSaveOnboarding} />}
@@ -205,7 +240,7 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <footer className="text-center py-4 text-xs text-gray-300">
+      <footer className="w-full text-center py-4 text-xs text-gray-300">
         月经周期日历 · 数据仅保存在你的浏览器中
       </footer>
     </div>

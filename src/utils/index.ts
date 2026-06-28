@@ -62,6 +62,7 @@ export function initializeData(settings?: UserSettings): AppData {
     version: APP_VERSION,
     settings: settings || { ...DEFAULT_SETTINGS },
     periods: [],
+    intimacyDates: [],
     onboardingCompleted: false,
     lastModified: new Date().toISOString(),
   };
@@ -144,6 +145,23 @@ export function getPeriodStartForDate(
   dateStr: string
 ): PeriodRecord | null {
   return periods.find((p) => p.startDate === dateStr) || null;
+}
+
+// ========== Intimacy Operations ==========
+
+export function toggleIntimacy(data: AppData, date: Date): AppData {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const exists = data.intimacyDates.includes(dateStr);
+  return {
+    ...data,
+    intimacyDates: exists
+      ? data.intimacyDates.filter((d) => d !== dateStr)
+      : [...data.intimacyDates, dateStr].sort(),
+  };
+}
+
+export function hasIntimacy(intimacyDates: string[], dateStr: string): boolean {
+  return intimacyDates.includes(dateStr);
 }
 
 // ========== Cycle Prediction ==========
@@ -299,7 +317,7 @@ export function getProbabilityLevel(
 export function getMonthDays(year: number, month: number): DayInfo[] {
   const monthStart = startOfMonth(new Date(year, month));
   const monthEnd = endOfMonth(monthStart);
-  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
   const days: DayInfo[] = [];
@@ -313,9 +331,11 @@ export function getMonthDays(year: number, month: number): DayInfo[] {
       isCurrentMonth: current.getMonth() === month,
       isWeekend: isWeekend(current),
       isToday: isToday(current),
-      probability: 'none', // will be filled by caller
+      probability: 'none',
       periodDay: null,
       isPeriodStart: false,
+      isOvulationDay: false,
+      hasIntimacy: false,
     });
     current = addDays(current, 1);
   }
@@ -327,7 +347,8 @@ export function getMonthDaysWithProbability(
   year: number,
   month: number,
   cycleState: CycleState,
-  periods: PeriodRecord[]
+  periods: PeriodRecord[],
+  intimacyDates: string[]
 ): DayInfo[] {
   const days = getMonthDays(year, month);
   return days.map((day) => {
@@ -337,7 +358,11 @@ export function getMonthDaysWithProbability(
       cycleState,
       periods
     );
-    return { ...day, probability: level, periodDay, isPeriodStart };
+    const isOvulationDay = cycleState.predictedOvulation
+      ? format(cycleState.predictedOvulation, 'yyyy-MM-dd') === day.dateStr
+      : false;
+    const hasIntimacy = intimacyDates.includes(day.dateStr);
+    return { ...day, probability: level, periodDay, isPeriodStart, isOvulationDay, hasIntimacy };
   });
 }
 
