@@ -17,6 +17,7 @@ import type {
   PeriodRecord,
   ProbabilityLevel,
   UserSettings,
+  PhaseLabel,
 } from '../types';
 import { DEFAULT_SETTINGS, STORAGE_KEY, APP_VERSION } from '../types';
 
@@ -313,6 +314,94 @@ export function calculateCycle(
     todayProbabilityLabel,
     todayPhase: { phase, label, periodDay, daysUntilOvulation },
   };
+}
+
+// ========== Get phase for any date (not just today) ==========
+
+export interface DatePhaseInfo {
+  phase: PhaseLabel;
+  label: string;
+  periodDay?: number;
+  probability: number | null;
+  probabilityLabel: string;
+}
+
+export function getDatePhase(
+  targetDate: Date,
+  periods: PeriodRecord[],
+  cycleState: CycleState
+): DatePhaseInfo {
+  const dateStr = format(targetDate, 'yyyy-MM-dd');
+  const { predictedOvulation, fertileWindow } = cycleState;
+
+  // Check if in period
+  const period = getPeriodForDate(periods, dateStr);
+  if (period) {
+    const periodDay = differenceInCalendarDays(targetDate, parseISO(period.startDate)) + 1;
+    const remaining = differenceInCalendarDays(parseISO(period.endDate), targetDate);
+    return {
+      phase: 'period',
+      label: `🩸 经期第 ${periodDay} 天，预计还有 ${remaining} 天结束`,
+      periodDay,
+      probability: 0.5,
+      probabilityLabel: '经期怀孕概率极低（约 <1%）',
+    };
+  }
+
+  if (!predictedOvulation || !fertileWindow) {
+    return { phase: 'no_data', label: '暂无预测数据', probability: null, probabilityLabel: '' };
+  }
+
+  const daysFromOvulation = differenceInCalendarDays(targetDate, predictedOvulation);
+  let phase: PhaseLabel;
+  let label: string;
+  let probability: number;
+  let probabilityLabel: string;
+
+  if (daysFromOvulation === 0) {
+    phase = 'fertile_high';
+    label = '🌸 排卵日，怀孕概率较高';
+    probability = 25;
+    probabilityLabel = '排卵日当天，怀孕概率约 25%';
+  } else if (daysFromOvulation === -1) {
+    phase = 'fertile_high';
+    label = '🌟 排卵前1天，怀孕概率最高';
+    probability = 30;
+    probabilityLabel = '排卵前1天，怀孕概率最高约 30%';
+  } else if (daysFromOvulation === -2) {
+    phase = 'fertile_high';
+    label = '🌟 排卵前2天，怀孕概率较高';
+    probability = 25;
+    probabilityLabel = '排卵前2天，怀孕概率约 25%';
+  } else if (daysFromOvulation === 1) {
+    phase = 'fertile_high';
+    label = '排卵后1天，仍有受孕可能';
+    probability = 10;
+    probabilityLabel = '排卵后1天，怀孕概率约 10%';
+  } else if (daysFromOvulation >= -5 && daysFromOvulation <= -3) {
+    phase = 'fertile_medium';
+    label = `易孕期第 ${Math.abs(daysFromOvulation)} 天`;
+    probability = 8;
+    probabilityLabel = `排卵前${Math.abs(daysFromOvulation)}天，怀孕概率约 8%`;
+  } else if (daysFromOvulation > 1 && daysFromOvulation <= 7) {
+    phase = 'luteal';
+    label = '黄体期，怀孕概率较低';
+    probability = 2;
+    probabilityLabel = '排卵后，怀孕概率约 2%';
+  } else if (daysFromOvulation < -5) {
+    phase = 'follicular';
+    const daysUntil = Math.abs(daysFromOvulation);
+    label = `卵泡期，距排卵日约 ${daysUntil} 天`;
+    probability = 3;
+    probabilityLabel = '距排卵日较远，怀孕概率约 3%';
+  } else {
+    phase = 'luteal';
+    label = '黄体期后期';
+    probability = 1;
+    probabilityLabel = '怀孕概率约 1%';
+  }
+
+  return { phase, label, probability, probabilityLabel };
 }
 
 export function getProbabilityLevel(

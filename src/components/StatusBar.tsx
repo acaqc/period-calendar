@@ -1,8 +1,11 @@
 import type { CycleState } from '../types';
+import type { DatePhaseInfo } from '../utils';
 
 interface StatusBarProps {
   cycleState: CycleState;
   hasPeriods: boolean;
+  selectedDate: Date | null;
+  selectedPhase: DatePhaseInfo | null;
 }
 
 function getPhaseEmoji(phase: string): string {
@@ -23,9 +26,22 @@ function getProbabilityColor(value: number): string {
   return 'text-gray-400';
 }
 
-export default function StatusBar({ cycleState, hasPeriods }: StatusBarProps) {
-  const { todayPhase, todayProbability, todayProbabilityLabel } = cycleState;
-  const emoji = getPhaseEmoji(todayPhase.phase);
+function formatDateShort(date: Date): string {
+  return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+export default function StatusBar({ cycleState, hasPeriods, selectedDate, selectedPhase }: StatusBarProps) {
+  // Use selected phase if available, otherwise today's phase
+  const activePhase = selectedPhase || {
+    phase: cycleState.todayPhase.phase,
+    label: cycleState.todayPhase.label,
+    probability: cycleState.todayProbability,
+    probabilityLabel: cycleState.todayProbabilityLabel,
+  };
+  const probability = activePhase.probability ?? cycleState.todayProbability;
+  const probabilityLabel = activePhase.probabilityLabel || cycleState.todayProbabilityLabel;
+  const isToday = !selectedDate;
+  const emoji = getPhaseEmoji(activePhase.phase);
 
   return (
     <div className="px-3 sm:px-4 pt-4 max-w-lg mx-auto">
@@ -36,39 +52,47 @@ export default function StatusBar({ cycleState, hasPeriods }: StatusBarProps) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-gray-400 mb-0.5">
-              {hasPeriods ? '今日状态' : '欢迎使用'}
+              {selectedDate
+                ? `📅 ${formatDateShort(selectedDate)}`
+                : hasPeriods
+                  ? '今日状态'
+                  : '欢迎使用'}
             </p>
             <p className="text-sm font-semibold text-gray-800 leading-relaxed">
-              {todayPhase.label}
+              {activePhase.label}
             </p>
+            {!isToday && (
+              <p className="text-xs text-indigo-400 mt-0.5">
+                点击「今天」按钮可回到今日状态
+              </p>
+            )}
           </div>
         </div>
 
         {/* Probability section */}
-        {todayProbability !== null && hasPeriods && (
+        {probability !== null && hasPeriods && (
           <div className="mt-3 pt-3 border-t border-gray-50">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">
-                {todayProbabilityLabel}
+                {probabilityLabel}
               </span>
               <div className="flex items-center gap-2">
-                {/* Probability bar */}
                 <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
-                      todayProbability >= 20
+                      probability >= 20
                         ? 'bg-rose-400'
-                        : todayProbability >= 8
+                        : probability >= 8
                           ? 'bg-amber-400'
-                          : todayProbability >= 3
+                          : probability >= 3
                             ? 'bg-yellow-400'
                             : 'bg-gray-300'
                     }`}
-                    style={{ width: `${Math.min(todayProbability * 3.3, 100)}%` }}
+                    style={{ width: `${Math.min(probability * 3.3, 100)}%` }}
                   />
                 </div>
-                <span className={`text-lg font-bold ${getProbabilityColor(todayProbability)}`}>
-                  {todayProbability}%
+                <span className={`text-lg font-bold ${getProbabilityColor(probability)}`}>
+                  {probability}%
                 </span>
               </div>
             </div>

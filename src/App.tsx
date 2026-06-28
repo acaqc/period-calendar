@@ -1,7 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { UserSettings } from './types';
 import { useAppData } from './hooks/useAppData';
-import { getMonthDaysWithProbability } from './utils';
+import { getMonthDaysWithProbability, getDatePhase } from './utils';
+import type { DatePhaseInfo } from './utils';
 import HeaderBar from './components/HeaderBar';
 import CalendarGrid from './components/CalendarGrid';
 import ToggleBar from './components/ToggleBar';
@@ -38,6 +39,12 @@ export default function App() {
     date: Date;
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const selectedPhase: DatePhaseInfo | null = useMemo(() => {
+    if (!selectedDate || data.periods.length === 0) return null;
+    return getDatePhase(selectedDate, data.periods, cycleState);
+  }, [selectedDate, data.periods, cycleState]);
 
   const showOnboarding = isInitialized && !data.onboardingCompleted;
 
@@ -69,10 +76,16 @@ export default function App() {
     setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1));
   }, []);
 
-  const handleToday = useCallback(() => setCurrentMonth(new Date()), []);
+  const handleToday = useCallback(() => {
+    setCurrentMonth(new Date());
+    setSelectedDate(null); // reset to today's status
+  }, []);
 
   const handleDateClick = useCallback(
     (date: Date) => {
+      // Update selected date for status bar
+      setSelectedDate(date);
+
       const dateStr = date.toISOString().slice(0, 10);
 
       // Intimacy mode: toggle intimacy for the date
@@ -225,7 +238,12 @@ export default function App() {
         </div>
 
         {/* Status */}
-        <StatusBar cycleState={cycleState} hasPeriods={data.periods.length > 0} />
+        <StatusBar
+          cycleState={cycleState}
+          hasPeriods={data.periods.length > 0}
+          selectedDate={selectedDate}
+          selectedPhase={selectedPhase}
+        />
 
         {/* Legend */}
         <LegendBar cycleState={cycleState} />
