@@ -15,6 +15,7 @@ export interface AppData {
   version: number;
   settings: UserSettings;
   periods: PeriodRecord[];
+  onboardingCompleted: boolean;
   lastModified: string;
 }
 

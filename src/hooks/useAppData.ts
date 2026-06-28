@@ -16,6 +16,7 @@ interface UseAppDataReturn {
   storageAvailable: boolean;
   isInitialized: boolean;
   updateSettings: (settings: UserSettings) => void;
+  completeOnboarding: (settings: UserSettings) => void;
   addPeriodRecord: (date: Date) => { error?: string };
   removePeriodRecord: (date: Date) => boolean;
   resetAll: () => void;
@@ -56,6 +57,10 @@ export function useAppData(): UseAppDataReturn {
     setData((prev) => ({ ...prev, settings }));
   }, []);
 
+  const completeOnboarding = useCallback((settings: UserSettings) => {
+    setData((prev) => ({ ...prev, settings, onboardingCompleted: true }));
+  }, []);
+
   const addPeriodRecord = useCallback(
     (date: Date): { error?: string } => {
       const result = addPeriod(data, date);
@@ -88,6 +93,7 @@ export function useAppData(): UseAppDataReturn {
     storageAvailable,
     isInitialized,
     updateSettings,
+    completeOnboarding,
     addPeriodRecord,
     removePeriodRecord,
     resetAll,

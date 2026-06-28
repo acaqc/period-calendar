@@ -26,6 +26,7 @@ export default function BottomBar({ periods, data }: BottomBarProps) {
       version: 1,
       settings: data.settings,
       periods: data.periods,
+      onboardingCompleted: true,
       lastModified: new Date().toISOString(),
     });
     downloadFile(json, 'period-data.json', 'application/json');

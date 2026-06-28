@@ -18,6 +18,7 @@ export default function App() {
     storageAvailable,
     isInitialized,
     updateSettings,
+    completeOnboarding,
     addPeriodRecord,
     removePeriodRecord,
     resetAll,
@@ -32,7 +33,7 @@ export default function App() {
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const showOnboarding = isInitialized && data.periods.length === 0;
+  const showOnboarding = isInitialized && !data.onboardingCompleted;
 
   const days = useMemo(
     () =>
@@ -119,8 +120,8 @@ export default function App() {
   }, [contextMenu, removePeriodRecord]);
 
   const handleSaveOnboarding = useCallback(
-    (settings: UserSettings) => updateSettings(settings),
-    [updateSettings]
+    (settings: UserSettings) => completeOnboarding(settings),
+    [completeOnboarding]
   );
 
   // Loading state

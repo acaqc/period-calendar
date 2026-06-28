@@ -62,6 +62,7 @@ export function initializeData(settings?: UserSettings): AppData {
     version: APP_VERSION,
     settings: settings || { ...DEFAULT_SETTINGS },
     periods: [],
+    onboardingCompleted: false,
     lastModified: new Date().toISOString(),
   };
 }
