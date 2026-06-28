@@ -220,6 +220,12 @@ export function calculateCycle(
         }
       : null;
 
+  // Pre-compute today's period check
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const todayPeriod = lastPeriod
+    ? (todayStr >= lastPeriod.startDate && todayStr <= lastPeriod.endDate ? lastPeriod : null)
+    : null;
+
   // ========== Build all cycle predictions (one per period record) ==========
   const allPredictions: CyclePrediction[] = sortedPeriods.map((period, idx) => {
     const pStart = parseISO(period.startDate);
@@ -243,16 +249,31 @@ export function calculateCycle(
     };
   });
 
-  // Today's phase
-  const todayStr = format(today, 'yyyy-MM-dd');
-  const todayPeriod = lastPeriod
-    ? (todayStr >= lastPeriod.startDate && todayStr <= lastPeriod.endDate ? lastPeriod : null)
-    : null;
+  // ========== Today's phase — use allPredictions to find correct ovulation ==========
 
   let phase: CycleState['todayPhase']['phase'] = 'no_data';
   let label = '请先标记经期开始日期，开始追踪周期';
   let periodDay: number | undefined;
   let daysUntilOvulation: number | undefined;
+  let todayProbability: number | null = null;
+  let todayProbabilityLabel = '';
+
+  // Find which prediction today belongs to
+  let todayOvDate: Date | null = null;
+  for (let i = 0; i < allPredictions.length; i++) {
+    const pred = allPredictions[i];
+    const nextPred = allPredictions[i + 1];
+    const periodStart = pred.periodStart.getTime();
+    const nextPeriodStart = nextPred ? nextPred.periodStart.getTime() : pred.nextPeriodStart.getTime();
+    if (today.getTime() >= periodStart && today.getTime() < nextPeriodStart) {
+      todayOvDate = pred.ovulationDate;
+      break;
+    }
+  }
+  // Fallback to last prediction
+  if (!todayOvDate && allPredictions.length > 0) {
+    todayOvDate = allPredictions[allPredictions.length - 1].ovulationDate;
+  }
 
   if (!lastPeriodStart) {
     phase = 'no_data';
@@ -261,74 +282,52 @@ export function calculateCycle(
     periodDay = differenceInCalendarDays(today, parseISO(todayPeriod.startDate)) + 1;
     const remaining = differenceInCalendarDays(parseISO(todayPeriod.endDate), today);
     label = `🩸 经期第 ${periodDay} 天，预计还有 ${remaining} 天结束`;
-  } else if (fertileWindow && predictedOvulation) {
-    const todayTime = today.getTime();
-    if (todayTime >= fertileWindow.start.getTime() && todayTime <= predictedOvulation.getTime()) {
-      if (todayTime >= addDays(predictedOvulation, -2).getTime()) {
-        phase = 'fertile_high';
-        const dayIn = differenceInCalendarDays(today, fertileWindow.start) + 1;
-        label = `🌟 怀孕概率较高，今天是易孕期第 ${dayIn} 天`;
-      } else {
-        phase = 'fertile_medium';
-        label = '怀孕概率中等，易孕期即将到来';
-      }
-    } else if (todayTime > predictedOvulation.getTime() && todayTime <= fertileWindow.end.getTime()) {
+    todayProbability = 0.5;
+    todayProbabilityLabel = '经期怀孕概率极低（约 <1%）';
+  } else if (todayOvDate) {
+    const daysFromOv = differenceInCalendarDays(today, todayOvDate);
+
+    if (daysFromOv === 0) {
       phase = 'fertile_high';
-      label = '🌟 怀孕概率较高，排卵后第一天';
-    } else if (lastPeriodStart && today < lastPeriodStart) {
-      phase = 'follicular';
-      daysUntilOvulation = predictedOvulation
-        ? differenceInCalendarDays(predictedOvulation, today)
-        : undefined;
-      label = daysUntilOvulation && daysUntilOvulation > 0
-        ? `当前怀孕概率较低，距排卵日约还有 ${daysUntilOvulation} 天`
-        : '当前处于卵泡期';
-    } else {
-      phase = 'luteal';
-      daysUntilOvulation = predictedNextPeriod
-        ? differenceInCalendarDays(predictedNextPeriod, today)
-        : undefined;
-      label = daysUntilOvulation && daysUntilOvulation > 0
-        ? `当前怀孕概率较低，距下次经期约 ${daysUntilOvulation} 天`
-        : '当前处于黄体期';
-    }
-  }
-
-  // ========== Probability calculation ==========
-
-  let todayProbability: number | null = null;
-  let todayProbabilityLabel = '';
-
-  if (lastPeriodStart && predictedOvulation) {
-    const daysFromOvulation = differenceInCalendarDays(today, predictedOvulation);
-
-    if (todayPeriod) {
-      todayProbability = 0.5;
-      todayProbabilityLabel = '经期怀孕概率极低（约 <1%）';
-    } else if (daysFromOvulation === 0) {
+      label = '🌸 排卵日，怀孕概率较高';
       todayProbability = 25;
       todayProbabilityLabel = '排卵日当天，怀孕概率约 25%';
-    } else if (daysFromOvulation === -1) {
+    } else if (daysFromOv === -1) {
+      phase = 'fertile_high';
+      label = '🌟 排卵前1天，怀孕概率最高';
       todayProbability = 30;
       todayProbabilityLabel = '排卵前1天，怀孕概率最高约 30%';
-    } else if (daysFromOvulation === -2) {
+    } else if (daysFromOv === -2) {
+      phase = 'fertile_high';
+      label = '🌟 排卵前2天，怀孕概率较高';
       todayProbability = 25;
       todayProbabilityLabel = '排卵前2天，怀孕概率约 25%';
-    } else if (daysFromOvulation === 1) {
+    } else if (daysFromOv === 1) {
+      phase = 'fertile_high';
+      label = '排卵后1天，仍有受孕可能';
       todayProbability = 10;
       todayProbabilityLabel = '排卵后1天，怀孕概率约 10%';
-    } else if (daysFromOvulation >= -5 && daysFromOvulation <= -3) {
+    } else if (daysFromOv >= -5 && daysFromOv <= -3) {
+      phase = 'fertile_medium';
+      label = `易孕期，距排卵日 ${Math.abs(daysFromOv)} 天`;
       todayProbability = 8;
-      todayProbabilityLabel = `排卵前${Math.abs(daysFromOvulation)}天，怀孕概率约 8%`;
-    } else if (daysFromOvulation > 1 && daysFromOvulation <= 7) {
+      todayProbabilityLabel = `排卵前${Math.abs(daysFromOv)}天，怀孕概率约 8%`;
+    } else if (daysFromOv > 1 && daysFromOv <= 7) {
+      phase = 'luteal';
+      label = `黄体期，排卵后 ${daysFromOv} 天`;
       todayProbability = 2;
-      todayProbabilityLabel = '排卵后，怀孕概率较低约 2%';
-    } else if (daysFromOvulation < -5) {
+      todayProbabilityLabel = '排卵后，怀孕概率约 2%';
+    } else if (daysFromOv < -5) {
+      phase = 'follicular';
+      daysUntilOvulation = Math.abs(daysFromOv);
+      label = `卵泡期，距排卵日约 ${daysUntilOvulation} 天`;
       todayProbability = 3;
       todayProbabilityLabel = '距排卵日较远，怀孕概率约 3%';
     } else {
+      phase = 'luteal';
+      label = '黄体期后期';
       todayProbability = 1;
-      todayProbabilityLabel = '黄体期后期，怀孕概率约 1%';
+      todayProbabilityLabel = '怀孕概率约 1%';
     }
   }
 
@@ -362,7 +361,6 @@ export function getDatePhase(
   cycleState: CycleState
 ): DatePhaseInfo {
   const dateStr = format(targetDate, 'yyyy-MM-dd');
-  const { predictedOvulation } = cycleState;
 
   // Check if in period
   const period = getPeriodForDate(periods, dateStr);
@@ -378,11 +376,35 @@ export function getDatePhase(
     };
   }
 
-  if (!predictedOvulation) {
+  // Find the prediction that this date belongs to
+  // Strategy: find the period that starts before targetDate and whose next period starts after targetDate
+  const { allPredictions } = cycleState;
+  let matchedPrediction = allPredictions.length > 0 ? allPredictions[allPredictions.length - 1] : null;
+
+  for (let i = 0; i < allPredictions.length; i++) {
+    const pred = allPredictions[i];
+    const nextPred = allPredictions[i + 1];
+    const periodStart = pred.periodStart.getTime();
+    const nextPeriodStart = nextPred ? nextPred.periodStart.getTime() : pred.nextPeriodStart.getTime();
+    const targetTime = targetDate.getTime();
+
+    if (targetTime >= periodStart && targetTime < nextPeriodStart) {
+      matchedPrediction = pred;
+      break;
+    }
+    // If target is before the first period, use the first prediction
+    if (i === 0 && targetTime < periodStart) {
+      matchedPrediction = pred;
+      break;
+    }
+  }
+
+  if (!matchedPrediction) {
     return { phase: 'no_data', label: '暂无预测数据', probability: null, probabilityLabel: '' };
   }
 
-  const daysFromOvulation = differenceInCalendarDays(targetDate, predictedOvulation);
+  const ovDate = matchedPrediction.ovulationDate;
+  const daysFromOvulation = differenceInCalendarDays(targetDate, ovDate);
   let phase: PhaseLabel;
   let label: string;
   let probability: number;
@@ -410,18 +432,17 @@ export function getDatePhase(
     probabilityLabel = '排卵后1天，怀孕概率约 10%';
   } else if (daysFromOvulation >= -5 && daysFromOvulation <= -3) {
     phase = 'fertile_medium';
-    label = `易孕期第 ${Math.abs(daysFromOvulation)} 天`;
+    label = `易孕期，距排卵日 ${Math.abs(daysFromOvulation)} 天`;
     probability = 8;
     probabilityLabel = `排卵前${Math.abs(daysFromOvulation)}天，怀孕概率约 8%`;
   } else if (daysFromOvulation > 1 && daysFromOvulation <= 7) {
     phase = 'luteal';
-    label = '黄体期，怀孕概率较低';
+    label = `黄体期，排卵后 ${daysFromOvulation} 天`;
     probability = 2;
     probabilityLabel = '排卵后，怀孕概率约 2%';
   } else if (daysFromOvulation < -5) {
     phase = 'follicular';
-    const daysUntil = Math.abs(daysFromOvulation);
-    label = `卵泡期，距排卵日约 ${daysUntil} 天`;
+    label = `卵泡期，距排卵日约 ${Math.abs(daysFromOvulation)} 天`;
     probability = 3;
     probabilityLabel = '距排卵日较远，怀孕概率约 3%';
   } else {
