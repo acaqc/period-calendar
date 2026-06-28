@@ -216,8 +216,6 @@ export default function App() {
             onDateContextMenu={handleDateContextMenu}
             onPrevMonth={handlePrevMonth}
             onNextMonth={handleNextMonth}
-            periodMode={periodMode}
-            intimacyMode={intimacyMode}
           />
         </div>
 

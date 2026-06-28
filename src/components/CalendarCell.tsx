@@ -5,8 +5,6 @@ interface CalendarCellProps {
   day: DayInfo;
   onDateClick: (date: Date) => void;
   onDateContextMenu: (date: Date, e: React.MouseEvent) => void;
-  periodMode: boolean;
-  intimacyMode: boolean;
 }
 
 function getCellClasses(
@@ -39,12 +37,11 @@ function getCellClasses(
   return `${base} hover:bg-gray-100 ${weekendStyle}`;
 }
 
-export default function CalendarCell({ day, onDateClick, onDateContextMenu, periodMode, intimacyMode }: CalendarCellProps) {
+export default function CalendarCell({ day, onDateClick, onDateContextMenu }: CalendarCellProps) {
   const [pressing, setPressing] = useState(false);
   const isDisabled = !day.isCurrentMonth;
-  // Already marked dates are always interactive (for cancellation)
-  const hasMark = day.probability === 'period' || day.hasIntimacy;
-  const isInteractive = isDisabled ? false : (periodMode || intimacyMode || hasMark);
+  // All current-month dates are interactive (for viewing phase info)
+  const isInteractive = !isDisabled;
 
   const cellClass = getCellClasses(
     day.probability,
