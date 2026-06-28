@@ -240,7 +240,7 @@ export default function SettingsPanel({
               }`}
               disabled={!changed}
             >
-              {changed ? '保存更改' : '已是最新'}
+              保存
             </button>
           </div>
 
