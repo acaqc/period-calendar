@@ -1,8 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { UserSettings } from './types';
 import { useAppData } from './hooks/useAppData';
-import { getMonthDaysWithProbability, getDatePhase } from './utils';
-import type { DatePhaseInfo } from './utils';
+import { getMonthDaysWithProbability } from './utils';
 import HeaderBar from './components/HeaderBar';
 import CalendarGrid from './components/CalendarGrid';
 import ToggleBar from './components/ToggleBar';
@@ -40,12 +39,6 @@ export default function App() {
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-
-  // Compute selected phase — always calculate if date selected
-  const selectedPhase: DatePhaseInfo | null = (() => {
-    if (!selectedDate) return null;
-    return getDatePhase(selectedDate, data.periods, cycleState);
-  })();
 
   const showOnboarding = isInitialized && !data.onboardingCompleted;
 
@@ -224,7 +217,7 @@ export default function App() {
           cycleState={cycleState}
           hasPeriods={data.periods.length > 0}
           selectedDate={selectedDate}
-          selectedPhase={selectedPhase}
+          periods={data.periods}
         />
 
         {/* Legend */}

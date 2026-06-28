@@ -1,11 +1,12 @@
-import type { CycleState } from '../types';
+import type { CycleState, PeriodRecord } from '../types';
 import type { DatePhaseInfo } from '../utils';
+import { getDatePhase } from '../utils';
 
 interface StatusBarProps {
   cycleState: CycleState;
   hasPeriods: boolean;
   selectedDate: Date | null;
-  selectedPhase: DatePhaseInfo | null;
+  periods: PeriodRecord[];
 }
 
 function getPhaseEmoji(phase: string): string {
@@ -30,18 +31,27 @@ function formatDateShort(date: Date): string {
   return `${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
-export default function StatusBar({ cycleState, hasPeriods, selectedDate, selectedPhase }: StatusBarProps) {
-  // Use selected phase if available, otherwise today's phase
-  const activePhase = selectedPhase || {
-    phase: cycleState.todayPhase.phase,
-    label: cycleState.todayPhase.label,
-    probability: cycleState.todayProbability,
-    probabilityLabel: cycleState.todayProbabilityLabel,
-  };
-  const probability = activePhase.probability ?? cycleState.todayProbability;
-  const probabilityLabel = activePhase.probabilityLabel || cycleState.todayProbabilityLabel;
-  const isToday = !selectedDate;
-  const emoji = getPhaseEmoji(activePhase.phase);
+export default function StatusBar({ cycleState, hasPeriods, selectedDate, periods }: StatusBarProps) {
+  // Always compute phase for selected date, never fallback
+  let activePhase: DatePhaseInfo | null = null;
+  let isSelected = false;
+
+  if (selectedDate) {
+    activePhase = getDatePhase(selectedDate, periods, cycleState);
+    isSelected = true;
+  } else {
+    // Today's phase
+    activePhase = {
+      phase: cycleState.todayPhase.phase,
+      label: cycleState.todayPhase.label,
+      probability: cycleState.todayProbability,
+      probabilityLabel: cycleState.todayProbabilityLabel,
+    };
+  }
+
+  const probability = activePhase?.probability ?? null;
+  const probabilityLabel = activePhase?.probabilityLabel ?? '';
+  const emoji = getPhaseEmoji(activePhase?.phase ?? 'no_data');
 
   return (
     <div className="px-3 sm:px-4 pt-4 max-w-lg mx-auto">
@@ -52,16 +62,16 @@ export default function StatusBar({ cycleState, hasPeriods, selectedDate, select
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-gray-400 mb-0.5">
-              {selectedDate
-                ? `📅 ${formatDateShort(selectedDate)}`
+              {isSelected
+                ? `📅 ${formatDateShort(selectedDate!)}`
                 : hasPeriods
                   ? '今日状态'
                   : '欢迎使用'}
             </p>
             <p className="text-sm font-semibold text-gray-800 leading-relaxed">
-              {activePhase.label}
+              {activePhase?.label ?? ''}
             </p>
-            {!isToday && (
+            {isSelected && (
               <p className="text-xs text-indigo-400 mt-0.5">
                 点击「今天」按钮可回到今日状态
               </p>
