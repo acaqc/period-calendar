@@ -37,16 +37,6 @@ export default function LegendBar({ cycleState }: LegendBarProps) {
         {/* Ovulation summary */}
         {cycleState.predictedOvulation && (
           <div className="border-t border-gray-50 pt-3 space-y-1.5">
-            {/* Previous ovulation */}
-            {cycleState.previousOvulation && (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-gray-400">🌸 上个排卵日</span>
-                <strong className="text-gray-600 font-semibold">
-                  {formatDateCN(cycleState.previousOvulation)}
-                </strong>
-              </div>
-            )}
-
             {/* Next ovulation */}
             <div className="flex items-center gap-2 text-xs">
               <span className="text-rose-400">🌸 下个排卵日</span>
