@@ -60,8 +60,6 @@ export default function SettingsPanel({
     onClose();
   };
 
-  const changed = cycleLength !== settings.cycleLength || periodLength !== settings.periodLength;
-
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
@@ -233,12 +231,7 @@ export default function SettingsPanel({
             </button>
             <button
               onClick={handleSave}
-              className={`flex-1 py-3 font-semibold rounded-xl transition-all text-sm shadow-lg ${
-                changed
-                  ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-200 active:scale-[0.98]'
-                  : 'bg-indigo-300 text-white cursor-default'
-              }`}
-              disabled={!changed}
+              className="flex-1 py-3 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 active:scale-[0.98] transition-all text-sm shadow-lg shadow-indigo-200"
             >
               保存
             </button>
