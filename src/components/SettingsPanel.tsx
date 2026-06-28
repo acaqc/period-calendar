@@ -222,16 +222,16 @@ export default function SettingsPanel({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 mb-5">
+          <div className="flex gap-3 mb-8">
             <button
               onClick={onClose}
-              className="flex-1 py-3 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-all text-sm"
+              className="flex-1 py-3 border border-gray-200 text-gray-500 font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98] transition-all text-sm"
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              className="flex-1 py-3 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 active:scale-[0.98] transition-all text-sm shadow-lg shadow-indigo-200"
+              className="flex-1 py-3 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 active:bg-indigo-700 active:scale-[0.97] transition-all text-sm shadow-sm"
             >
               保存
             </button>
