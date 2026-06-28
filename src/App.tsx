@@ -41,10 +41,11 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const selectedPhase: DatePhaseInfo | null = useMemo(() => {
+  // Compute selected phase — NOT memoized to ensure freshness after setState
+  const selectedPhase: DatePhaseInfo | null = (() => {
     if (!selectedDate || data.periods.length === 0) return null;
     return getDatePhase(selectedDate, data.periods, cycleState);
-  }, [selectedDate, data.periods, cycleState]);
+  })();
 
   const showOnboarding = isInitialized && !data.onboardingCompleted;
 
@@ -83,71 +84,57 @@ export default function App() {
 
   const handleDateClick = useCallback(
     (date: Date) => {
-      // Update selected date for status bar
+      // Always update selected date for status bar
       setSelectedDate(date);
 
       const dateStr = date.toISOString().slice(0, 10);
 
-      // Intimacy mode: toggle intimacy for the date
-      if (intimacyMode) {
-        toggleIntimacyRecord(date);
-        const hasIt = (data.intimacyDates || []).includes(dateStr);
-        setToast(hasIt ? '已取消爱爱记录' : '💕 已记录爱爱');
-        setTimeout(() => setToast(null), 2000);
-        return;
-      }
-
-      // Check if clicking on an existing marked date (period or intimacy)
+      // Check existing marks
       const existingStart = data.periods.find((p) => p.startDate === dateStr);
       const existingPeriod = !existingStart
         ? data.periods.find((p) => dateStr >= p.startDate && dateStr <= p.endDate)
         : null;
       const existingIntimacy = (data.intimacyDates || []).includes(dateStr);
 
-      // If clicking on a marked date without any mode active → cancel it
-      if (!periodMode && !intimacyMode) {
-        if (existingStart) {
-          removePeriodRecord(date);
-          setToast('经期记录已取消');
-          setTimeout(() => setToast(null), 2000);
-          return;
-        }
-        if (existingPeriod) {
-          removePeriodRecord(new Date(existingPeriod.startDate));
-          setToast('经期记录已取消');
-          setTimeout(() => setToast(null), 2000);
-          return;
-        }
-        if (existingIntimacy) {
-          toggleIntimacyRecord(date);
-          setToast('已取消爱爱记录');
-          setTimeout(() => setToast(null), 2000);
-          return;
-        }
-        return; // no mark, no mode → do nothing
+      // Intimacy mode active: toggle intimacy
+      if (intimacyMode) {
+        toggleIntimacyRecord(date);
+        setToast(existingIntimacy ? '已取消爱爱记录' : '💕 已记录爱爱');
+        setTimeout(() => setToast(null), 2000);
+        return;
       }
 
-      // Period mode active
-      if (periodMode) {
-        if (existingStart) {
-          removePeriodRecord(date);
-          setToast('经期记录已取消');
-          setTimeout(() => setToast(null), 2000);
-        } else if (existingPeriod) {
-          removePeriodRecord(new Date(existingPeriod.startDate));
-          setToast('经期记录已取消');
-          setTimeout(() => setToast(null), 2000);
-        } else {
-          const result = addPeriodRecord(date);
-          if (result.error) {
-            setToast(result.error);
-            setTimeout(() => setToast(null), 3000);
-          } else {
-            setToast('✓ 经期已记录');
-            setTimeout(() => setToast(null), 2000);
-          }
-        }
+      // Clicking on an existing period → always cancel it (regardless of mode)
+      if (existingStart || existingPeriod) {
+        const targetDate = existingStart ? date : new Date(existingPeriod!.startDate);
+        removePeriodRecord(targetDate);
+        setToast('经期记录已取消');
+        setTimeout(() => setToast(null), 2000);
+        return;
       }
+
+      // Clicking on existing intimacy (no mode) → cancel it
+      if (existingIntimacy) {
+        toggleIntimacyRecord(date);
+        setToast('已取消爱爱记录');
+        setTimeout(() => setToast(null), 2000);
+        return;
+      }
+
+      // Period mode active + blank date → add period
+      if (periodMode) {
+        const result = addPeriodRecord(date);
+        if (result.error) {
+          setToast(result.error);
+          setTimeout(() => setToast(null), 3000);
+        } else {
+          setToast('✓ 经期已记录');
+          setTimeout(() => setToast(null), 2000);
+        }
+        return;
+      }
+
+      // No mode, no existing mark → just show date info (already set via setSelectedDate)
     },
     [periodMode, intimacyMode, data.periods, data.intimacyDates, addPeriodRecord, removePeriodRecord, toggleIntimacyRecord]
   );

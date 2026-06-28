@@ -84,23 +84,31 @@ export function useAppData(): UseAppDataReturn {
 
   const addPeriodRecord = useCallback(
     (date: Date): { error?: string } => {
-      const result = addPeriod(data, date);
-      if (result.error) return { error: result.error };
-      setData(result.data);
-      return {};
+      let error: string | undefined;
+      setData((prev) => {
+        const result = addPeriod(prev, date);
+        if (result.error) {
+          error = result.error;
+          return prev;
+        }
+        return result.data;
+      });
+      return error ? { error } : {};
     },
-    [data]
+    []
   );
 
   const removePeriodRecord = useCallback(
     (date: Date): boolean => {
-      const result = removePeriod(data, date);
-      if (result.removed) {
-        setData(result.data);
-      }
-      return result.removed;
+      let removed = false;
+      setData((prev) => {
+        const result = removePeriod(prev, date);
+        removed = result.removed;
+        return result.data;
+      });
+      return removed;
     },
-    [data]
+    []
   );
 
   const toggleIntimacyRecord = useCallback(
