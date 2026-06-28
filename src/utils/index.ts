@@ -265,12 +265,52 @@ export function calculateCycle(
     }
   }
 
+  // ========== Probability calculation ==========
+
+  let todayProbability: number | null = null;
+  let todayProbabilityLabel = '';
+
+  if (lastPeriodStart && predictedOvulation) {
+    const daysFromOvulation = differenceInCalendarDays(today, predictedOvulation);
+
+    if (todayPeriod) {
+      todayProbability = 0.5;
+      todayProbabilityLabel = '经期怀孕概率极低（约 <1%）';
+    } else if (daysFromOvulation === 0) {
+      todayProbability = 25;
+      todayProbabilityLabel = '排卵日当天，怀孕概率约 25%';
+    } else if (daysFromOvulation === -1) {
+      todayProbability = 30;
+      todayProbabilityLabel = '排卵前1天，怀孕概率最高约 30%';
+    } else if (daysFromOvulation === -2) {
+      todayProbability = 25;
+      todayProbabilityLabel = '排卵前2天，怀孕概率约 25%';
+    } else if (daysFromOvulation === 1) {
+      todayProbability = 10;
+      todayProbabilityLabel = '排卵后1天，怀孕概率约 10%';
+    } else if (daysFromOvulation >= -5 && daysFromOvulation <= -3) {
+      todayProbability = 8;
+      todayProbabilityLabel = `排卵前${Math.abs(daysFromOvulation)}天，怀孕概率约 8%`;
+    } else if (daysFromOvulation > 1 && daysFromOvulation <= 7) {
+      todayProbability = 2;
+      todayProbabilityLabel = '排卵后，怀孕概率较低约 2%';
+    } else if (daysFromOvulation < -5) {
+      todayProbability = 3;
+      todayProbabilityLabel = '距排卵日较远，怀孕概率约 3%';
+    } else {
+      todayProbability = 1;
+      todayProbabilityLabel = '黄体期后期，怀孕概率约 1%';
+    }
+  }
+
   return {
     averageCycleLength: effectiveCycle,
     lastPeriodStart,
     predictedNextPeriod,
     predictedOvulation,
     fertileWindow,
+    todayProbability,
+    todayProbabilityLabel,
     todayPhase: { phase, label, periodDay, daysUntilOvulation },
   };
 }
