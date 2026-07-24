@@ -1,5 +1,5 @@
 {
-  "name": "period-calendar",
+  "name": "period-tracker",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,25 +7,24 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview",
-    "deploy:vercel": "vercel --prod",
-    "deploy:cloudflare": "wrangler pages deploy dist",
-    "serve": "node server.cjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "date-fns": "^4.4.0",
+    "framer-motion": "^12.42.2",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.1",
+    "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
-    "oxlint": "^1.69.0",
-    "tailwindcss": "^4.3.1",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "tailwindcss": "^4.3.2",
     "typescript": "~6.0.2",
-    "vite": "^8.1.0"
+    "vite": "^8.1.1"
   }
 }

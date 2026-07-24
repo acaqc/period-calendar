@@ -71,10 +71,18 @@ export interface CycleState {
   };
 }
 
+export interface DatePhaseInfo {
+  phase: PhaseLabel;
+  label: string;
+  periodDay?: number;
+  probability: number | null;
+  probabilityLabel: string;
+}
+
 export const DEFAULT_SETTINGS: UserSettings = {
   cycleLength: 28,
   periodLength: 5,
 };
 
-export const STORAGE_KEY = 'period-calendar-data';
+export const STORAGE_KEY = 'period-tracker-data';
 export const APP_VERSION = 2;

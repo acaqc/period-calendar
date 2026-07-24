@@ -1,20 +1,67 @@
 @import "tailwindcss";
 
+/* ===== Dewdrop 设计 Token ===== */
 :root {
-  --color-primary: #6366F1;
-  --color-primary-light: #818CF8;
-  --color-primary-bg: #EEF2FF;
-  --color-period: #8B5CF6;
-  --color-period-bg: #F5F3FF;
-  --color-high: #F43F5E;
-  --color-high-bg: #FFF1F2;
-  --color-medium: #F59E0B;
-  --color-medium-bg: #FFFBEB;
-  --color-today: #6366F1;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  /* --- 主色调（暖中性）--- */
+  --color-bg-primary: #FAFAF8;
+  --color-bg-secondary: #F5F4F0;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F9F8F6;
+
+  /* --- 文字色 --- */
+  --color-text-primary: #2D2D2D;
+  --color-text-secondary: #6B6B6B;
+  --color-text-tertiary: #757575;
+  --color-text-inverse: #FAFAF8;
+
+  /* --- 功能色 --- */
+  --color-period: #E88D7D;
+  --color-period-light: #F5D5CD;
+  --color-period-bg: #FDF5F2;
+  --color-period-start: #D4786A;
+
+  --color-high-probability: #D4956A;
+  --color-high-probability-bg: #FDF6F0;
+  --color-high-probability-light: #EED5C0;
+
+  --color-medium-probability: #E8D5B7;
+  --color-medium-probability-bg: #FDFAF5;
+  --color-medium-probability-dark: #C9AD8B;
+
+  --color-ovulation: #A3B5A6;
+  --color-ovulation-light: #D5E3D7;
+  --color-ovulation-bg: #F4F8F5;
+
+  --color-intimacy: #D4956A;
+  --color-today: #4A4A4A;
+  --color-today-ring: #B0B0B0;
+
+  /* --- 边框色 --- */
+  --color-border: #EBEBE6;
+  --color-border-light: #F0F0EC;
+
+  /* --- 阴影 --- */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.02);
+  --shadow-lg: 0 12px 28px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.03);
+  --shadow-xl: 0 20px 40px rgba(0,0,0,0.08);
+
+  /* --- 圆角 --- */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+
+  /* --- 动效 --- */
+  --ease-spring: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -23,8 +70,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Noto Sans SC', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #F8FAFC;
-  color: #1E293B;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   min-height: 100vh;
   overscroll-behavior: none;
 }
@@ -34,67 +81,70 @@ body {
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #D4D4CE; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #BFBFB8; }
 
 /* Range input styling */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  background: #E2E8F0;
+  background: #E8E6E0;
   border-radius: 3px;
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: white;
-  border: 2px solid var(--color-primary);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2.5px solid var(--color-period);
+  box-shadow: 0 2px 8px rgba(232, 141, 125, 0.18);
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s var(--ease-spring);
 }
 input[type="range"]::-webkit-slider-thumb:active {
   transform: scale(1.15);
 }
 
-/* Animations */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* ===== Animations ===== */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
-}
-@keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
 }
 @keyframes slideInUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
+/* 经期脉冲（Dewdrop 配色） */
 @keyframes periodPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.3); }
-  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
-}
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(-12px) translateX(-50%); }
-  to { opacity: 1; transform: translateY(0) translateX(-50%); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 141, 125, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(232, 141, 125, 0); }
 }
 
-.animate-fade-in-up { animation: fadeInUp 0.35s ease-out; }
+/* 排卵日绽放 */
+@keyframes ovulationBloom {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 日历单元格入场 */
+@keyframes cellEnter {
+  from { opacity: 0; transform: scale(0.85) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 .animate-fade-in { animation: fadeIn 0.25s ease-out; }
-.animate-scale-in { animation: scaleIn 0.25s ease-out; }
-.animate-slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-.animate-slide-in-up { animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-.animate-toast-in { animation: toastIn 0.3s ease-out; }
-.animate-period-pulse { animation: periodPulse 2s ease-in-out infinite; }
+.animate-scale-in { animation: scaleIn 0.25s var(--ease-spring); }
+.animate-slide-in-up { animation: slideInUp 0.35s var(--ease-out-expo); }
+.animate-period-pulse { animation: periodPulse 2.5s ease-in-out infinite; }
+.animate-ovulation-bloom { animation: ovulationBloom 0.5s var(--ease-spring); }
+.animate-cell-enter { animation: cellEnter 0.3s var(--ease-out-expo) both; }

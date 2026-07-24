@@ -1,13 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { UserSettings } from '../types';
-
-interface SettingsPanelProps {
-  isOpen: boolean;
-  settings: UserSettings;
-  onClose: () => void;
-  onSave: (settings: UserSettings) => void;
-  onReset: () => void;
-}
+import { useAppStore } from '../store/useAppStore';
 
 const CYCLE_PRESETS = [
   { label: '较短', value: 24, desc: '24天' },
@@ -22,13 +14,15 @@ const PERIOD_PRESETS = [
   { label: '较长', value: 7, desc: '7天' },
 ];
 
-export default function SettingsPanel({
-  isOpen,
-  settings,
-  onClose,
-  onSave,
-  onReset,
-}: SettingsPanelProps) {
+export default function SettingsPanel() {
+  const showSettings = useAppStore((s) => s.showSettings);
+  const settings = useAppStore((s) => s.data.settings);
+  const setShowSettings = useAppStore((s) => s.setShowSettings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  const resetAll = useAppStore((s) => s.resetAll);
+  const showToast = useAppStore((s) => s.showToast);
+  const setData = useAppStore((s) => s.setData);
+
   const [cycleLength, setCycleLength] = useState(settings.cycleLength);
   const [periodLength, setPeriodLength] = useState(settings.periodLength);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -36,50 +30,70 @@ export default function SettingsPanel({
   useEffect(() => {
     setCycleLength(settings.cycleLength);
     setPeriodLength(settings.periodLength);
-  }, [settings, isOpen]);
+  }, [settings, showSettings]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (showSettings) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showSettings]);
 
-  if (!isOpen) return null;
+  if (!showSettings) return null;
 
   const handleSave = () => {
-    onSave({ cycleLength, periodLength });
-    onClose();
+    updateSettings({ cycleLength, periodLength });
+    setShowSettings(false);
   };
 
   const handleReset = () => {
     setShowResetConfirm(false);
-    onReset();
-    onClose();
+    const prevData = resetAll();
+    setShowSettings(false);
+    showToast('数据已重置，5 秒内可撤销');
+    // 5 秒倒计时
+    let countdown = 5;
+    const undoToast = setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        clearInterval(undoToast);
+      }
+    }, 1000);
+    // 存储撤销句柄
+    const undoKey = setTimeout(() => {
+      clearInterval(undoToast);
+    }, 5000);
+    // 将撤销能力暴露到 window（简单实现）
+    (window as unknown as Record<string, unknown>).__undoReset = () => {
+      clearTimeout(undoKey);
+      clearInterval(undoToast);
+      setData(prevData);
+      showToast('已恢复数据');
+    };
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
+        className="absolute inset-0 bg-[#2D2D2D]/25 backdrop-blur-sm animate-fade-in"
+        onClick={() => setShowSettings(false)}
       />
 
-      {/* Panel */}
-      <div className="relative bg-white w-full max-w-sm h-full shadow-2xl animate-slide-in-right flex flex-col">
-        {/* Header */}
+      <div className="relative bg-white w-full max-w-md max-h-[90vh] rounded-[28px] shadow-xl animate-scale-in flex flex-col overflow-hidden">
+        {/* 头部 */}
         <div className="flex-shrink-0 px-6 pt-6 pb-2">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">设置</h2>
-              <p className="text-sm text-gray-400 mt-0.5">调整你的周期参数</p>
+              <h2 className="text-xl font-bold text-[#2D2D2D] tracking-tight">设置</h2>
+              <p className="text-sm text-[#757575] mt-0.5">调整你的周期参数</p>
             </div>
             <button
-              onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:scale-90 transition-all text-gray-400"
+              onClick={() => setShowSettings(false)}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#F5F4F0] active:scale-90 transition-all text-[#757575]"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -89,25 +103,26 @@ export default function SettingsPanel({
           </div>
         </div>
 
-        {/* Scrollable content */}
+        {/* 可滚动内容 */}
         <div className="flex-1 overflow-y-auto px-6 pb-6">
-          {/* Cycle Length */}
+          {/* 周期长度 */}
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                <span className="text-lg">🔄</span>
+              <div className="w-9 h-9 rounded-xl bg-[#FDF5F2] flex items-center justify-center flex-shrink-0">
+                <span className="text-lg" role="img" aria-label="周期">🔄</span>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">月经周期长度</p>
-                <p className="text-xs text-gray-400">两次月经第一天的间隔天数</p>
+                <p className="text-sm font-semibold text-[#2D2D2D]">月经周期长度</p>
+                <p className="text-xs text-[#757575]">两次月经第一天的间隔天数</p>
               </div>
             </div>
 
-            {/* Value display */}
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 mb-3">
+            <div className="bg-[#FDF5F2] rounded-2xl p-5 mb-3">
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-5xl font-bold text-indigo-600 tracking-tight">{cycleLength}</span>
-                <span className="text-lg text-gray-400 font-medium">天</span>
+                <span className="text-5xl font-bold text-[#E88D7D] tracking-tight">
+                  {cycleLength}
+                </span>
+                <span className="text-lg text-[#8A8A8A] font-medium">天</span>
               </div>
               <div className="flex justify-center mt-2">
                 <div className="flex items-center gap-0.5">
@@ -115,9 +130,9 @@ export default function SettingsPanel({
                     <div
                       key={i}
                       className={`w-1.5 h-5 rounded-full transition-all duration-300 ${
-                        i < Math.round((cycleLength - 21) / 24 * 10)
-                          ? 'bg-indigo-400'
-                          : 'bg-indigo-100'
+                        i < Math.round(((cycleLength - 21) / 24) * 10)
+                          ? 'bg-[#E88D7D]'
+                          : 'bg-[#F5D5CD]'
                       }`}
                     />
                   ))}
@@ -125,8 +140,7 @@ export default function SettingsPanel({
               </div>
             </div>
 
-            {/* Slider */}
-            <div className="bg-gray-50 rounded-xl px-4 py-3">
+            <div className="bg-[#F5F4F0] rounded-xl px-4 py-3">
               <input
                 type="range"
                 min={21}
@@ -135,13 +149,12 @@ export default function SettingsPanel({
                 onChange={(e) => setCycleLength(Number(e.target.value))}
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-gray-400 mt-1.5">
+              <div className="flex justify-between text-xs text-[#8A8A8A] mt-1.5">
                 <span>21天</span>
                 <span>45天</span>
               </div>
             </div>
 
-            {/* Presets */}
             <div className="flex gap-1.5 mt-2">
               {CYCLE_PRESETS.map((p) => (
                 <button
@@ -149,8 +162,8 @@ export default function SettingsPanel({
                   onClick={() => setCycleLength(p.value)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     cycleLength === p.value
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                      ? 'bg-[#FDF5F2] text-[#E88D7D]'
+                      : 'bg-[#F5F4F0] text-[#757575] hover:bg-[#FDF5F2]/50'
                   }`}
                 >
                   {p.desc}
@@ -159,36 +172,33 @@ export default function SettingsPanel({
             </div>
           </div>
 
-          {/* Period Length */}
+          {/* 经期天数 */}
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
-                <span className="text-lg">🩸</span>
+              <div className="w-9 h-9 rounded-xl bg-[#FDF5F2] flex items-center justify-center flex-shrink-0">
+                <span className="text-lg" role="img" aria-label="经期">🩸</span>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">经期持续天数</p>
-                <p className="text-xs text-gray-400">每次月经通常持续几天</p>
+                <p className="text-sm font-semibold text-[#2D2D2D]">经期持续天数</p>
+                <p className="text-xs text-[#757575]">每次月经通常持续几天</p>
               </div>
             </div>
 
-            {/* Value display */}
-            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-5 mb-3">
+            <div className="bg-[#FDF5F2] rounded-2xl p-5 mb-3">
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-5xl font-bold text-violet-600 tracking-tight">{periodLength}</span>
-                <span className="text-lg text-gray-400 font-medium">天</span>
+                <span className="text-5xl font-bold text-[#D4786A] tracking-tight">
+                  {periodLength}
+                </span>
+                <span className="text-lg text-[#8A8A8A] font-medium">天</span>
               </div>
               <div className="flex justify-center gap-1 mt-2">
                 {Array.from({ length: periodLength }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2.5 h-2.5 rounded-full bg-violet-400"
-                  />
+                  <div key={i} className="w-2.5 h-2.5 rounded-full bg-[#E88D7D]" />
                 ))}
               </div>
             </div>
 
-            {/* Slider */}
-            <div className="bg-gray-50 rounded-xl px-4 py-3">
+            <div className="bg-[#F5F4F0] rounded-xl px-4 py-3">
               <input
                 type="range"
                 min={2}
@@ -197,13 +207,12 @@ export default function SettingsPanel({
                 onChange={(e) => setPeriodLength(Number(e.target.value))}
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-gray-400 mt-1.5">
+              <div className="flex justify-between text-xs text-[#8A8A8A] mt-1.5">
                 <span>2天</span>
                 <span>10天</span>
               </div>
             </div>
 
-            {/* Presets */}
             <div className="flex gap-1.5 mt-2">
               {PERIOD_PRESETS.map((p) => (
                 <button
@@ -211,8 +220,8 @@ export default function SettingsPanel({
                   onClick={() => setPeriodLength(p.value)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     periodLength === p.value
-                      ? 'bg-violet-100 text-violet-700'
-                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                      ? 'bg-[#FDF5F2] text-[#D4786A]'
+                      : 'bg-[#F5F4F0] text-[#757575] hover:bg-[#FDF5F2]/50'
                   }`}
                 >
                   {p.desc}
@@ -221,24 +230,24 @@ export default function SettingsPanel({
             </div>
           </div>
 
-          {/* Actions */}
+          {/* 操作按钮 */}
           <div className="flex gap-3 mb-8">
             <button
-              onClick={onClose}
-              className="flex-1 py-3 border border-gray-200 text-gray-500 font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98] transition-all text-sm"
+              onClick={() => setShowSettings(false)}
+              className="flex-1 py-3 border border-[#EBEBE6] text-[#757575] font-medium rounded-xl hover:bg-[#F5F4F0] hover:border-[#D4D4CE] active:scale-[0.98] transition-all text-sm"
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              className="flex-1 py-3 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 active:bg-indigo-700 active:scale-[0.97] transition-all text-sm shadow-sm"
+              className="flex-1 py-3 bg-[#E88D7D] text-white font-semibold rounded-xl hover:bg-[#D4786A] active:scale-[0.97] transition-all text-sm shadow-sm"
             >
               保存
             </button>
           </div>
 
-          {/* Reset */}
-          <div className="border-t border-gray-100 pt-5">
+          {/* 重置 */}
+          <div className="border-t border-[#F0F0EC] pt-5">
             {!showResetConfirm ? (
               <button
                 onClick={() => setShowResetConfirm(true)}
@@ -262,7 +271,9 @@ export default function SettingsPanel({
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-red-700">确定要重置吗？</p>
-                    <p className="text-xs text-red-400 mt-0.5">所有经期和爱爱记录将被清除，此操作不可恢复</p>
+                    <p className="text-xs text-red-400 mt-0.5">
+                      所有经期和爱爱记录将被清除，此操作不可恢复
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -283,12 +294,12 @@ export default function SettingsPanel({
             )}
           </div>
 
-          {/* Disclaimer */}
-          <div className="mt-5 p-3.5 bg-amber-50 rounded-xl border border-amber-100/80">
+          {/* 免责声明 */}
+          <div className="mt-5 p-3.5 bg-amber-50/70 rounded-xl border border-amber-100/60">
             <div className="flex gap-2">
-              <span className="text-amber-400 text-sm flex-shrink-0">⚠️</span>
-              <p className="text-xs text-amber-600 leading-relaxed">
-                本工具基于日历法估算，仅供参考，不可作为避孕手段。实际排卵日受多种因素影响。
+              <span className="text-amber-400/70 text-sm flex-shrink-0" role="img" aria-label="警告">⚠️</span>
+              <p className="text-xs text-amber-700/80 leading-relaxed">
+                基于日历法估算排卵日，不作为避孕或医疗建议。备孕或避孕请咨询专业医生。
               </p>
             </div>
           </div>

@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import { formatMonthCN } from '../utils';
+import { useAppStore } from '../store/useAppStore';
 
 interface HeaderBarProps {
   currentMonth: Date;
+  showToday: boolean;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
-  showToday: boolean;
-  onOpenSettings: () => void;
 }
 
 export default function HeaderBar({
   currentMonth,
+  showToday,
   onPrevMonth,
   onNextMonth,
   onToday,
-  showToday,
-  onOpenSettings,
 }: HeaderBarProps) {
+  const setShowSettings = useAppStore((s) => s.setShowSettings);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -35,41 +35,38 @@ export default function HeaderBar({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100/60">
-      <div className="max-w-lg mx-auto flex items-center justify-between px-3 py-2.5">
-        {/* Prev month */}
+    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-[#EBEBE6]">
+      <div className="max-w-lg mx-auto flex items-center justify-between px-4 py-3">
         <button
           onClick={onPrevMonth}
-          className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-90 transition-all text-gray-500"
+          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[#F5F4F0] active:scale-90 transition-all duration-150 text-[#757575] hover:text-[#6B6B6B]"
           aria-label="上个月"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15,18 9,12 15,6" />
           </svg>
         </button>
 
-        {/* Month title */}
         <h1
-          className="text-lg font-bold text-gray-900 select-none tracking-tight"
+          className="text-lg font-semibold text-[#2D2D2D] select-none tracking-tight"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
           {formatMonthCN(currentMonth)}
         </h1>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           {showToday && (
             <button
               onClick={onToday}
-              className="px-3.5 py-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 active:scale-95 transition-all"
+              className="px-3 py-1.5 text-sm font-medium text-[#E88D7D] bg-[#FDF5F2] rounded-xl hover:bg-[#F5D5CD]/40 active:scale-95 transition-all duration-150"
             >
               今天
             </button>
           )}
           <button
-            onClick={onOpenSettings}
-            className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-90 transition-all text-gray-500"
+            onClick={() => setShowSettings(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[#F5F4F0] active:scale-90 transition-all duration-150 text-[#757575] hover:text-[#6B6B6B]"
             aria-label="设置"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -79,10 +76,10 @@ export default function HeaderBar({
           </button>
           <button
             onClick={onNextMonth}
-            className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-90 transition-all text-gray-500"
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[#F5F4F0] active:scale-90 transition-all duration-150 text-[#757575] hover:text-[#6B6B6B]"
             aria-label="下个月"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9,18 15,12 9,6" />
             </svg>
           </button>
