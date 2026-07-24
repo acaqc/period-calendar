@@ -44,7 +44,7 @@ export default function CalendarGrid({
       <div className="bg-white rounded-[28px] shadow-sm border border-[#EBEBE6] overflow-hidden">
         {/* 星期头 */}
         <div className="grid grid-cols-7 border-b border-[#F0F0EC]">
-          {WEEKDAY_LABELS.map((label, i) => (
+          {WEEKDAY_LABELS.map((label: string, i: number) => (
             <div
               key={label}
               className={`text-center text-[11px] font-medium py-3.5 tracking-wider ${
